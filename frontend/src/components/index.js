@@ -1,0 +1,13 @@
+import Navbar from './Navbar.jsx'
+import Footer from './Footer.jsx'
+import Hero from './Home/Hero.jsx'
+import LatestCollection from './Home/LatestCollection.jsx'
+import Title from './Title.jsx'
+import ProductItem from './ProductItem.jsx'
+import BestSeller from './Home/BestSeller.jsx'
+import OurPolicy from './Home/OurPolicy.jsx'
+import NewsLetter from './Home/NewsLetter.jsx'
+import SearchBar from './Collection/SearchBar.jsx'
+import RelativeProduct from './Collection/RelativeProduct.jsx'
+import CartTotal from './Cart/CartTotal.jsx'
+export {Navbar,Footer,Hero,LatestCollection,Title, ProductItem,BestSeller,OurPolicy,NewsLetter,SearchBar,RelativeProduct,CartTotal}
