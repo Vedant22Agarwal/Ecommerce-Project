@@ -4,9 +4,23 @@ import cookieParser from "cookie-parser";
 
 const app = express();
 
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  process.env.ADMIN_URL,
+];
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL, // which frontend url are allowed for accessing the server
+    origin: function (origin, callback) {
+      // Allow requests without Origin (e.g. Postman)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );
