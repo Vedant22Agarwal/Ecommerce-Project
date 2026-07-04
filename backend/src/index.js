@@ -11,11 +11,13 @@ connectDB()
     app.on("error", (error) => {
       console.error("ERROR :", error);
     });
-    app.get("/",async(req,res) => {
+    app.get("/", async (req, res) => {
       res.send("Api Working");
-    })
+    });
+    app.listen(process.env.PORT || 3000, () => {
+      console.log(`Server is running at ${process.env.PORT}`);
+    });
   })
   .catch((error) => {
     console.log("MONGO_DB connection failed !!!!", error);
   });
-
