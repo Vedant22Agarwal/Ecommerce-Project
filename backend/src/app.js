@@ -6,8 +6,8 @@ const app = express();
 
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN, // which frontend url are allowed for accessing the server
-    // credentials: true,
+    origin: process.env.FRONTEND_URL, // which frontend url are allowed for accessing the server
+    credentials: true,
   })
 );
 
