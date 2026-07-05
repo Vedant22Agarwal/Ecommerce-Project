@@ -1,165 +1,235 @@
 # 🛍️ Forever - MERN E-Commerce Website
 
-A full-stack MERN E-Commerce application with separate **User** and **Admin** panels. Users can browse products, place orders, and make payments, while admins can manage products and orders through a dedicated dashboard.
+A full-stack **MERN E-Commerce** application with dedicated **User** and **Admin** panels. Users can browse products, manage carts, place orders, make secure payments, and write product reviews, while admins can efficiently manage products, orders, and customer reviews through a modern dashboard.
 
 ---
 
-## 🚀 Live Demo
+# 🚀 Live Demo
 
-### BackendURL
+### 🌐 Backend API
 
-**https://ecommerce-project-eight-pink.vercel.app/**
+https://ecommerce-project-eight-pink.vercel.app/
 
-### User Website
+### 👤 User Website
 
-**https://ecommerce-project-utwk-eight.vercel.app/**
+https://ecommerce-project-utwk-eight.vercel.app/
 
-### Admin Panel
+### 🛠️ Admin Panel
 
-**https://ecommerce-project-glkt.vercel.app/**
-
----
-
-## ✨ Features
-
-### 👤 User
-
-* User Registration & Login (JWT Authentication)
-* Browse Products
-* Search & Filter Products
-* Add to Cart
-* Place Orders
-* Stripe Payment Integration
-* Razorpay Payment Integration
-* Cash on Delivery (COD)
-* Order History
-* Responsive UI
-
-### 🛠️ Admin
-
-* Secure Admin Login
-* Add New Products
-* Update Product Inventory
-* Delete Products
-* View All Orders
-* Update Order Status
+https://ecommerce-project-glkt.vercel.app/
 
 ---
 
-## 🏗️ Tech Stack
+# ✨ Features
 
-### Frontend
+## 👤 User Features
 
-* React.js
-* Vite
-* Tailwind CSS
-* Axios
-* React Router
-* React Toastify
-
-### Backend
-
-* Node.js
-* Express.js
-* MongoDB
-* Mongoose
-* JWT Authentication
-* Cloudinary
-* Multer
-* Stripe
-* Razorpay
+- JWT Authentication
+- User Registration & Login
+- Browse Products
+- Search Products
+- Filter Products
+- Product Details Page
+- Product Image Gallery
+- Size Selection
+- Add to Cart
+- Cart Management
+- Place Orders
+- Razorpay Payment Integration
+- Stripe Payment Integration
+- Cash on Delivery (COD)
+- Order History
+- Product Reviews & Ratings
+- Responsive Design
 
 ---
 
-## 📂 Project Structure
+## 🛠️ Admin Features
+
+- Secure Admin Authentication
+- Add Products
+- View All Products
+- Delete Products
+- View Customer Orders
+- Update Order Status
+- View Customer Reviews
+- Delete Customer Reviews
+- Responsive Admin Dashboard
+
+---
+
+# ⭐ Review System
+
+- Anyone can view product reviews.
+- Logged-in users can submit ratings and reviews.
+- Product ratings are calculated using MongoDB Aggregation Pipeline.
+- Admins can view and moderate customer reviews.
+
+---
+
+# 📊 MongoDB Aggregation
+
+The review system uses MongoDB Aggregation Pipeline to efficiently fetch review statistics and user information.
+
+Aggregation stages used:
+
+- `$match`
+- `$lookup`
+- `$facet`
+- `$group`
+- `$project`
+- `$sort`
+- `$addFields`
+- `$first`
+- `$round`
+- `$ifNull`
+
+These are used to calculate:
+
+- Average Product Rating
+- Total Review Count
+- Reviewer Details
+- Product Review List
+
+using a **single optimized database query**.
+
+---
+
+# 🏗️ Tech Stack
+
+## Frontend
+
+- React.js
+- Vite
+- Tailwind CSS
+- Axios
+- React Router
+- React Toastify
+
+## Backend
+
+- Node.js
+- Express.js
+- MongoDB
+- Mongoose
+- JWT Authentication
+- Cloudinary
+- Multer
+- Stripe
+- Razorpay
+
+---
+
+# 📂 Project Structure
 
 ```text
+Ecommerce-Project
+│
 ├── frontend
+│
 ├── admin
+│
 └── backend
 ```
 
 ---
 
-## ⚙️ Installation
+# ⚙️ Installation
 
-### 1. Clone the Repository
+## 1. Clone Repository
 
 ```bash
 git clone https://github.com/Vedant22Agarwal/Ecommerce-Project.git
+
 cd Ecommerce-Project
 ```
 
 ---
 
-## ▶️ Running the Backend
+## 2. Start Backend
 
 ```bash
 cd backend
+
 npm install
+
 npm run dev
 ```
 
-The backend starts first and serves the APIs used by both the User and Admin applications.
-
 ---
 
-## ▶️ Running the User Frontend
+## 3. Start Frontend
 
 ```bash
 cd frontend
+
 npm install
+
 npm run dev
 ```
 
 ---
 
-## ▶️ Running the Admin Panel
+## 4. Start Admin Panel
 
 ```bash
 cd admin
+
 npm install
+
 npm run dev
 ```
 
 ---
 
-## 🔑 Admin Credentials
+# 🔑 Admin Credentials
 
-**Email:** `admin@forever.com`
+```text
+Email    : admin@forever.com
 
-**Password:** `12345678`
+Password : 12345678
+```
 
-> Replace the placeholders above with your actual admin login credentials before sharing the repository.
-
----
-
-## 🌐 Deployment Links
-
-### User
-
-https://ecommerce-project-utwk-eight.vercel.app/
-
-### Admin
-
-https://ecommerce-project-glkt.vercel.app/
-
-### Backend API
-
-https://ecommerce-project-eight-pink.vercel.app/
-
+> Replace these credentials with your own before making the repository public.
 
 ---
 
-## 👨‍💻 Author
+# 🌍 Deployment
+
+| Application | URL |
+|-------------|-----|
+| User Website | https://ecommerce-project-utwk-eight.vercel.app/ |
+| Admin Panel | https://ecommerce-project-glkt.vercel.app/ |
+| Backend API | https://ecommerce-project-eight-pink.vercel.app/ |
+
+---
+
+# 📸 Screenshots
+
+Add screenshots of the following pages:
+
+- Home Page
+- Product Details Page
+- Cart
+- Orders
+- Product Reviews
+- Admin Dashboard
+- Product Management
+- Order Management
+- Review Management
+
+---
+
+# 👨‍💻 Author
 
 **Vedant Agarwal**
 
 GitHub:
+
 https://github.com/Vedant22Agarwal
 
 ---
 
-## 📄 License
+# 📄 License
 
-This project is created for learning and portfolio purposes.
+This project is developed for learning, educational, and portfolio purposes.
