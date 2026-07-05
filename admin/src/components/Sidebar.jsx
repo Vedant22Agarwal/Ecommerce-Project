@@ -25,6 +25,12 @@ const Sidebar = () => {
             <img src={assets.order_icon} alt="" className='w-5 h-5 ' />
             <p className='block'>Orders</p>
           </NavLink>
+          <NavLink to={"/reviews"}
+            className={({ isActive }) => `flex items-center text-center flex-col sm:flex-row  sm:gap-3 border border-gray-300 border-r-0 px-3 py-2 rounded-l ${isActive ? "bg-[#ffebf5] border-[#C586A5]" : ""}`}
+          >
+            <img src={assets.order_icon} alt="" className='w-5 h-5 ' />
+            <p className='block'>Reviews</p>
+          </NavLink>
         </div>
       </div>
     </>

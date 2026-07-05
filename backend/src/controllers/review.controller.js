@@ -122,4 +122,75 @@ const getProductReviews = asyncHandler(async (req, res) => {
   );
 });
 
-export { addReview, getProductReviews };
+const getAllReviews = asyncHandler(async (req, res) => {
+  const reviews = await Review.aggregate([
+    {
+      $lookup: {
+        from: "users",
+        localField: "userId",
+        foreignField: "_id",
+        as: "user",
+      },
+    },
+    {
+      $lookup: {
+        from: "products",
+        localField: "productId",
+        foreignField: "_id",
+        as: "product",
+      },
+    },
+    {
+      $addFields: {
+        user: {
+          $first: "$user",
+        },
+        product: {
+          $first: "$product",
+        },
+      },
+    },
+    {
+      $project: {
+        rating: 1,
+        comment: 1,
+        createdAt: 1,
+        "user.name": 1,
+        "product.name": 1,
+        "product.image": 1,
+      },
+    },
+    {
+      $sort: {
+        createdAt: -1,
+      },
+    },
+  ]);
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      reviews,
+      "All reviews fetched successfully"
+    )
+  );
+});
+
+
+const deleteReview = asyncHandler(async (req, res) => {
+  const { reviewId } = req.params;
+
+  const review = await Review.findById(reviewId);
+
+  if (!review) {
+    throw new ApiError(404, "Review not found");
+  }
+
+  await Review.findByIdAndDelete(reviewId);
+
+  return res.status(200).json(
+    new ApiResponse(200, {}, "Review deleted successfully")
+  );
+});
+
+export { addReview, getProductReviews,getAllReviews,deleteReview };
