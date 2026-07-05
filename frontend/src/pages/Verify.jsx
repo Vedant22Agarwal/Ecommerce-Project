@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { useSearchParams } from "react-router";
+import { useSearchParams } from "react-router-dom";
 import useShopContext from "../context/ShopContext.jsx";
 
 const Verify = () => {

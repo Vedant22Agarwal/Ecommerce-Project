@@ -1,8 +1,8 @@
 import {
-    createBrowserRouter,
-    createRoutesFromElements,
-    Route,
-} from 'react-router'
+  createBrowserRouter,
+  createRoutesFromElements,
+  Route,
+} from "react-router-dom";
 import App from '../App.jsx'
 import {Home, Collection, About, Contact, Product, Cart, Login, PlaceOrder, Order, Verify} from '../pages/index.js'
 
