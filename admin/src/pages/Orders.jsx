@@ -13,7 +13,7 @@ const Orders = () => {
 
   const fetchAllOrder = async () => {
     if (!token) {
-      return null;
+      return ;
     }
     try {
       const response = await axios.get(`${backendUrl}/api/order/list`, {

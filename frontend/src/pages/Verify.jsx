@@ -1,10 +1,9 @@
-import React from 'react'
-import useShopContext from '../context/ShopContext.jsx'
-import { useState } from 'react';
-import { useSearchParams } from 'react-router';
-import { useEffect } from 'react';
-import axios from 'axios';
-import { toast } from 'react-toastify';
+import React, { useEffect } from "react";
+import axios from "axios";
+import { toast } from "react-toastify";
+import { useSearchParams } from "react-router";
+import useShopContext from "../context/ShopContext.jsx";
+
 const Verify = () => {
     const { navigate, setCartItems, backendURL, accessToken } = useShopContext();
     const [searchParams] = useSearchParams();
@@ -15,6 +14,12 @@ const Verify = () => {
     const verifyPayment = async () => {
         try {
             if (!accessToken) return;
+
+            if (!success || !orderId) {
+                toast.error("Invalid payment details");
+                navigate("/cart");
+                return;
+            }
 
             const response = await axios.post(
                 `${backendURL}/api/order/verifyStripe`,
@@ -27,7 +32,7 @@ const Verify = () => {
                         Authorization: `Bearer ${accessToken}`,
                     },
                 }
-            );
+            );  
             console.log(response.data);
             if (response.data.success) {
                 toast.success("Payment Successful");
@@ -39,18 +44,22 @@ const Verify = () => {
             }
         } catch (error) {
             console.error(error);
-            toast.error(error.response?.data?.message || "Payment verification failed");
+            toast.error(
+                error.response?.data?.message || "Payment verification failed"
+            );
+            navigate("/cart");
         }
     };
-    useEffect(() => {
-        if (!accessToken) return;
-        verifyPayment();
-    }, [accessToken])
-    return (
-        <>
-            <div className=""></div>
-        </>
-    )
-}
 
-export default Verify
+    useEffect(() => {
+        verifyPayment();
+    }, [accessToken, success, orderId]);
+
+    return (
+        <div className="min-h-[60vh] flex items-center justify-center">
+            <div className="w-12 h-12 border-4 border-gray-300 border-t-black rounded-full animate-spin"></div>
+        </div>
+    );
+};
+
+export default Verify;
