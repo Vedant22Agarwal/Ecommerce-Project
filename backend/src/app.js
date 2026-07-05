@@ -35,6 +35,7 @@ import userRouter from "./routes/user.routes.js";
 import productRouter from "./routes/product.routes.js";
 import cartRouter from "./routes/cart.routes.js";
 import orderRouter from "./routes/orders.routes.js";
+import reviewRoute from "./routes/review.routes.js";
 import errorHandler from "./middleware/error.middleware.js";
 
 // route declaration
@@ -42,6 +43,7 @@ app.use("/api/user", userRouter);
 app.use("/api/product", productRouter);
 app.use("/api/cart",cartRouter);
 app.use("/api/order",orderRouter);
+app.use("/api/review",reviewRoute);
 
 app.use(errorHandler);
 
