@@ -1,27 +1,45 @@
-import {v2 as cloudinary} from "cloudinary";
-import fs from "fs"
+import { v2 as cloudinary } from "cloudinary";
+import fs from "fs";
+import { ApiError } from "./ApiError.js"; // Change the path if needed
+
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET, // Click 'View API Keys' above to copy your API secret
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-const uploadOnCloudinary = async (localfilepath) => {
-    try{
-        if(!localfilepath) return null;
-        const response = await cloudinary.uploader.upload(localfilepath,{
-            resource_type:"image"
-        });
-        console.log("file is uploaded ",response.url);
-        fs.unlinkSync(localfilepath);
-        return response;
+
+const uploadOnCloudinary = async (localFilePath) => {
+  try {
+    if (!localFilePath) {
+      throw new ApiError(400, "Local file path is missing");
     }
-    catch(error){
-        if(localfilepath && fs.existsSync(localfilepath)){
-            console.log(1);
-        fs.unlinkSync(localfilepath);
-        }
-    console.log(error);
-    return null;
+
+    console.log("Uploading file:", localFilePath);
+    console.log("File exists:", fs.existsSync(localFilePath));
+
+    const response = await cloudinary.uploader.upload(localFilePath, {
+      resource_type: "image",
+    });
+
+    console.log("Cloudinary Upload Success:", response.secure_url);
+
+    if (fs.existsSync(localFilePath)) {
+      fs.unlinkSync(localFilePath);
     }
+
+    return response;
+  } catch (error) {
+    console.error("Cloudinary Upload Error:", error);
+
+    if (localFilePath && fs.existsSync(localFilePath)) {
+      fs.unlinkSync(localFilePath);
+    }
+
+    throw new ApiError(
+      error.http_code || 500,
+      error.message || "Failed to upload image to Cloudinary"
+    );
+  }
 };
-export {uploadOnCloudinary}
+
+export { uploadOnCloudinary };
