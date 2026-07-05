@@ -32,6 +32,10 @@ const addProduct = asyncHandler(async (req, res) => {
   );
   //   console.log(images);
 
+  if (images.length === 0) {
+    throw new ApiError(400, "Please upload at least one product image");
+  }
+
   const imageUrls = await Promise.all(
     images.map(async (img) => {
       const uploaded = await uploadOnCloudinary(img.path);
