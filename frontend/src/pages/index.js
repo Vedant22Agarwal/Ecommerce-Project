@@ -8,7 +8,9 @@ import Login from "./Login.jsx"
 import PlaceOrder from "./PlaceOrder.jsx"
 import Order from "./Order.jsx"
 import Verify from "./Verify.jsx"
-
+import ForgotPassword from "./ForgotPassword.jsx"
+import VerifyOtp from "./VerifyOtp.jsx";
+import ResetPassword from "./ResetPassword.jsx";
 export {
   Home,
   Collection,
@@ -19,5 +21,8 @@ export {
   Login,
   PlaceOrder,
   Order,
-  Verify
+  Verify,
+  ForgotPassword,
+  VerifyOtp,
+  ResetPassword
 }

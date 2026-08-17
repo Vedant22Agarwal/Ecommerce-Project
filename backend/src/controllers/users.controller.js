@@ -1,3 +1,4 @@
+import { OAuth2Client } from "google-auth-library";
 import { asyncHandler } from "../utils/AsyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -5,11 +6,15 @@ import { uploadOnCloudinary } from "../utils/Cloudinary.js";
 import { User } from "../models/users.models.js";
 import validator from "validator";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
+import { sendPasswordResetOtp } from "../utils/Email.js";
 
 const options = {
   httpOnly: true,
   secure: true,
 };
+// To verify google client id
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const generateAccessToken = () => {
   return jwt.sign({ role: "admin" }, process.env.ACCESS_TOKEN_SECRET, {
@@ -77,6 +82,74 @@ const loginUser = asyncHandler(async (req, res) => {
           refreshToken,
         },
         "User Logged in Successfully"
+      )
+    );
+});
+
+// Google Login user
+const googleLogin = asyncHandler(async (req, res) => {
+  const { credential } = req.body;
+  if (!credential) {
+    throw new ApiError(400, "Google credential is required");
+  }
+  // Now verify google token
+  const ticket = await googleClient.verifyIdToken({
+    idToken: credential,
+    audience: process.env.GOOGLE_CLIENT_ID,
+  });
+
+  const payload = ticket.getPayload();
+  console.log(payload);
+
+  const { sub: googleId, email, name, email_verified } = payload;
+  if (!email || !email_verified) {
+    throw new ApiError(401, "Google account email is not verified");
+  }
+
+  let user = await User.findOne({ googleId });
+  // If Google user doesn't exist,
+  // check whether an account with this email already exists
+  if (!user) {
+    user = await User.findOne({ email });
+    // Existing email/password account
+    // Link Google account to it
+    if (user) {
+      user.googleId = googleId;
+
+      await user.save({
+        validateBeforeSave: false,
+      });
+    }
+  }
+
+  // Completely new user
+  if (!user) {
+    user = await User.create({
+      name,
+      email,
+      googleId,
+    });
+  }
+  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+    user._id
+  );
+  const loggedInUser = await User.findById(user._id).select(
+    "-password -refreshToken"
+  );
+
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        {
+          user: loggedInUser,
+          accessToken,
+          refreshToken,
+        },
+        "Google Login Successful"
       )
     );
 });
@@ -156,5 +229,191 @@ const adminLogin = asyncHandler(async (req, res) => {
     );
 });
 
+const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
 
-export { loginUser, registerUser, adminLogin };
+  if (!email || email.trim() === "") {
+    throw new ApiError(400, "Email is required");
+  }
+
+  if (!validator.isEmail(email)) {
+    throw new ApiError(400, "Please enter a valid email");
+  }
+
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    throw new ApiError(404, "User with this email does not exist");
+  }
+
+  // Generate 6-digit OTP
+  const otp = crypto.randomInt(100000, 1000000).toString();
+
+  // Hash OTP before storing it
+  const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
+
+  user.resetPasswordOtp = hashedOtp;
+
+  // OTP valid for 10 minutes
+  user.resetPasswordOtpExpires = Date.now() + 10 * 60 * 1000;
+
+  // Reset verification state
+  user.resetPasswordVerified = false;
+
+  await user.save({
+    validateBeforeSave: false,
+  });
+
+  await sendPasswordResetOtp(email, otp);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, null, "OTP generated successfully"));
+});
+
+const verifyResetOtp = asyncHandler(async (req, res) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    throw new ApiError(400, "Email and OTP are required");
+  }
+
+  if (!validator.isEmail(email)) {
+    throw new ApiError(400, "Please enter a valid email");
+  }
+
+  if (!/^\d{6}$/.test(otp)) {
+    throw new ApiError(400, "OTP must be 6 digits");
+  }
+
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    throw new ApiError(404, "User does not exist");
+  }
+
+  // Check whether OTP exists
+  if (!user.resetPasswordOtp) {
+    throw new ApiError(400, "No password reset OTP found");
+  }
+
+  // Check OTP expiry
+  if (
+    !user.resetPasswordOtpExpires ||
+    user.resetPasswordOtpExpires < Date.now()
+  ) {
+    throw new ApiError(400, "OTP has expired");
+  }
+
+  // Hash the OTP entered by the user
+  const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
+
+  // Compare hashed OTP
+  if (hashedOtp !== user.resetPasswordOtp) {
+    throw new ApiError(400, "Invalid OTP");
+  }
+
+  // OTP is correct
+  user.resetPasswordVerified = true;
+
+  // OTP should not be reusable
+  user.resetPasswordOtp = undefined;
+  user.resetPasswordOtpExpires = undefined;
+
+  await user.save({
+    validateBeforeSave: false,
+  });
+
+  // Create a temporary reset token
+  const resetToken = jwt.sign(
+    {
+      _id: user._id,
+      type: "password-reset",
+    },
+    process.env.RESET_PASSWORD_TOKEN_SECRET,
+    {
+      expiresIn: "10m",
+    }
+  );
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        resetToken,
+      },
+      "OTP verified successfully"
+    )
+  );
+});
+
+const resetPassword = asyncHandler(async (req, res) => {
+  const { resetToken, newPassword, confirmPassword } = req.body;
+
+  if (!resetToken || !newPassword || !confirmPassword) {
+    throw new ApiError(
+      400,
+      "Reset token, new password and confirm password are required"
+    );
+  }
+
+  if (newPassword !== confirmPassword) {
+    throw new ApiError(400, "Passwords do not match");
+  }
+
+  if (newPassword.length < 8 || newPassword.length > 20) {
+    throw new ApiError(400, "Password must be between 8 and 20 characters");
+  }
+
+  // Verify reset token
+  let decodedToken;
+
+  try {
+    decodedToken = jwt.verify(
+      resetToken,
+      process.env.RESET_PASSWORD_TOKEN_SECRET
+    );
+  } catch (error) {
+    throw new ApiError(401, "Invalid or expired reset token");
+  }
+
+  // Make sure this token is specifically for password reset
+  if (decodedToken.type !== "password-reset") {
+    throw new ApiError(401, "Invalid reset token");
+  }
+
+  const user = await User.findById(decodedToken._id);
+
+  if (!user) {
+    throw new ApiError(404, "User does not exist");
+  }
+
+  // OTP must have been successfully verified
+  if (!user.resetPasswordVerified) {
+    throw new ApiError(401, "Please verify the OTP first");
+  }
+
+  // Set new password
+  user.password = newPassword;
+
+  // Reset password-reset state
+  user.resetPasswordVerified = false;
+  user.resetPasswordOtp = undefined;
+  user.resetPasswordOtpExpires = undefined;
+
+  await user.save();
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, null, "Password reset successfully"));
+});
+
+export {
+  loginUser,
+  registerUser,
+  adminLogin,
+  googleLogin,
+  forgotPassword,
+  verifyResetOtp,
+  resetPassword,
+};

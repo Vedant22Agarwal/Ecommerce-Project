@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
-      trim : true
+      trim: true,
     },
     email: {
       type: String,
@@ -17,7 +17,27 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
+      required: function () {
+        return !this.googleId;
+      },
+    },
+
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+    resetPasswordOtp: {
+      type: String,
+    },
+
+    resetPasswordOtpExpires: {
+      type: Date,
+    },
+
+    resetPasswordVerified: {
+      type: Boolean,
+      default: false,
     },
     cartData: {
       type: Object,
@@ -31,11 +51,12 @@ const userSchema = new mongoose.Schema(
 );
 
 userSchema.pre("save", async function () {
-  if (!this.isModified("password")) return;
+  if (!this.isModified("password") || !this.password) return;
   this.password = await bcrypt.hash(this.password, 10);
 });
 
 userSchema.methods.isPasswordCorrect = async function (password) {
+  if (!this.password) return false;
   return await bcrypt.compare(password, this.password);
 };
 
