@@ -408,6 +408,133 @@ const resetPassword = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, null, "Password reset successfully"));
 });
 
+const updateUserLocation = asyncHandler(async (req, res) => {
+  const {
+    latitude,
+    longitude,
+    address,
+  } = req.body;
+
+  // -----------------------------
+  // Validate coordinates
+  // -----------------------------
+
+  if (
+    latitude === undefined ||
+    longitude === undefined
+  ) {
+    throw new ApiError(
+      400,
+      "Latitude and longitude are required"
+    );
+  }
+
+  if (
+    typeof latitude !== "number" ||
+    typeof longitude !== "number"
+  ) {
+    throw new ApiError(
+      400,
+      "Latitude and longitude must be numbers"
+    );
+  }
+
+  if (
+    latitude < -90 ||
+    latitude > 90
+  ) {
+    throw new ApiError(
+      400,
+      "Invalid latitude"
+    );
+  }
+
+  if (
+    longitude < -180 ||
+    longitude > 180
+  ) {
+    throw new ApiError(
+      400,
+      "Invalid longitude"
+    );
+  }
+
+  // -----------------------------
+  // Update user location
+  // -----------------------------
+
+  const user =
+    await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        $set: {
+          location: {
+            latitude,
+            longitude,
+
+            address: {
+              street:
+                address?.street || "",
+
+              city:
+                address?.city || "",
+
+              state:
+                address?.state || "",
+
+              zipcode:
+                address?.zipcode || "",
+
+              country:
+                address?.country || "",
+            },
+          },
+        },
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).select(
+      "-password -refreshToken"
+    );
+
+  if (!user) {
+    throw new ApiError(
+      404,
+      "User not found"
+    );
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { user },
+        "Location updated successfully"
+      )
+    );
+});
+
+const getUserLocation = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id)
+    .select("location");
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        location: user.location || null,
+      },
+      "Location fetched successfully"
+    )
+  );
+});
 export {
   loginUser,
   registerUser,
@@ -416,4 +543,6 @@ export {
   forgotPassword,
   verifyResetOtp,
   resetPassword,
+  updateUserLocation,
+  getUserLocation
 };
