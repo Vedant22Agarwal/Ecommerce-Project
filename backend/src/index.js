@@ -5,6 +5,7 @@ dotenv.config({
 import connectDB from "./config/mongodb.js";
 import express from "express";
 import { app } from "./app.js";
+import "./config/redis.js";
 
 connectDB()
   .then(() => {

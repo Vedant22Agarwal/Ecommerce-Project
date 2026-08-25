@@ -8,6 +8,7 @@ import validator from "validator";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { sendPasswordResetOtp } from "../utils/Email.js";
+import redisClient from "../config/redis.js";
 
 const options = {
   httpOnly: true,
@@ -248,20 +249,11 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
   // Generate 6-digit OTP
   const otp = crypto.randomInt(100000, 1000000).toString();
-
-  // Hash OTP before storing it
   const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
+  const otpKey = `forgot-password:otp:${email}`;
 
-  user.resetPasswordOtp = hashedOtp;
-
-  // OTP valid for 10 minutes
-  user.resetPasswordOtpExpires = Date.now() + 10 * 60 * 1000;
-
-  // Reset verification state
-  user.resetPasswordVerified = false;
-
-  await user.save({
-    validateBeforeSave: false,
+  await redisClient.set(otpKey, hashedOtp, {
+    EX: 5 * 60,
   });
 
   await sendPasswordResetOtp(email, otp);
@@ -292,38 +284,20 @@ const verifyResetOtp = asyncHandler(async (req, res) => {
     throw new ApiError(404, "User does not exist");
   }
 
-  // Check whether OTP exists
-  if (!user.resetPasswordOtp) {
-    throw new ApiError(400, "No password reset OTP found");
+  const otpKey = `forgot-password:otp:${email}`;
+  const storedHashedOtp = await redisClient.get(otpKey);
+
+  if (!storedHashedOtp) {
+    throw new ApiError(401, "OTP has expired or does not exist");
   }
 
-  // Check OTP expiry
-  if (
-    !user.resetPasswordOtpExpires ||
-    user.resetPasswordOtpExpires < Date.now()
-  ) {
-    throw new ApiError(400, "OTP has expired");
-  }
-
-  // Hash the OTP entered by the user
   const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
-
-  // Compare hashed OTP
-  if (hashedOtp !== user.resetPasswordOtp) {
-    throw new ApiError(400, "Invalid OTP");
+  
+  if (hashedOtp !== storedHashedOtp) {
+    throw new ApiError(401, "Invalid OTP");
   }
 
-  // OTP is correct
-  user.resetPasswordVerified = true;
-
-  // OTP should not be reusable
-  user.resetPasswordOtp = undefined;
-  user.resetPasswordOtpExpires = undefined;
-
-  await user.save({
-    validateBeforeSave: false,
-  });
-
+  redisClient.del(otpKey);
   // Create a temporary reset token
   const resetToken = jwt.sign(
     {
@@ -388,18 +362,8 @@ const resetPassword = asyncHandler(async (req, res) => {
     throw new ApiError(404, "User does not exist");
   }
 
-  // OTP must have been successfully verified
-  if (!user.resetPasswordVerified) {
-    throw new ApiError(401, "Please verify the OTP first");
-  }
-
   // Set new password
   user.password = newPassword;
-
-  // Reset password-reset state
-  user.resetPasswordVerified = false;
-  user.resetPasswordOtp = undefined;
-  user.resetPasswordOtpExpires = undefined;
 
   await user.save();
 
@@ -409,117 +373,71 @@ const resetPassword = asyncHandler(async (req, res) => {
 });
 
 const updateUserLocation = asyncHandler(async (req, res) => {
-  const {
-    latitude,
-    longitude,
-    address,
-  } = req.body;
+  const { latitude, longitude, address } = req.body;
 
   // -----------------------------
   // Validate coordinates
   // -----------------------------
 
-  if (
-    latitude === undefined ||
-    longitude === undefined
-  ) {
-    throw new ApiError(
-      400,
-      "Latitude and longitude are required"
-    );
+  if (latitude === undefined || longitude === undefined) {
+    throw new ApiError(400, "Latitude and longitude are required");
   }
 
-  if (
-    typeof latitude !== "number" ||
-    typeof longitude !== "number"
-  ) {
-    throw new ApiError(
-      400,
-      "Latitude and longitude must be numbers"
-    );
+  if (typeof latitude !== "number" || typeof longitude !== "number") {
+    throw new ApiError(400, "Latitude and longitude must be numbers");
   }
 
-  if (
-    latitude < -90 ||
-    latitude > 90
-  ) {
-    throw new ApiError(
-      400,
-      "Invalid latitude"
-    );
+  if (latitude < -90 || latitude > 90) {
+    throw new ApiError(400, "Invalid latitude");
   }
 
-  if (
-    longitude < -180 ||
-    longitude > 180
-  ) {
-    throw new ApiError(
-      400,
-      "Invalid longitude"
-    );
+  if (longitude < -180 || longitude > 180) {
+    throw new ApiError(400, "Invalid longitude");
   }
 
   // -----------------------------
   // Update user location
   // -----------------------------
 
-  const user =
-    await User.findByIdAndUpdate(
-      req.user._id,
-      {
-        $set: {
-          location: {
-            latitude,
-            longitude,
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: {
+        location: {
+          latitude,
+          longitude,
 
-            address: {
-              street:
-                address?.street || "",
+          address: {
+            street: address?.street || "",
 
-              city:
-                address?.city || "",
+            city: address?.city || "",
 
-              state:
-                address?.state || "",
+            state: address?.state || "",
 
-              zipcode:
-                address?.zipcode || "",
+            zipcode: address?.zipcode || "",
 
-              country:
-                address?.country || "",
-            },
+            country: address?.country || "",
           },
         },
       },
-      {
-        new: true,
-        runValidators: true,
-      }
-    ).select(
-      "-password -refreshToken"
-    );
+    },
+    {
+      new: true,
+      runValidators: true,
+    }
+  ).select("-password -refreshToken");
 
   if (!user) {
-    throw new ApiError(
-      404,
-      "User not found"
-    );
+    throw new ApiError(404, "User not found");
   }
 
   return res
     .status(200)
-    .json(
-      new ApiResponse(
-        200,
-        { user },
-        "Location updated successfully"
-      )
-    );
+    .json(new ApiResponse(200, { user }, "Location updated successfully"));
 });
 
 const getUserLocation = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user._id)
-    .select("location");
+  const user = await User.findById(req.user._id).select("location");
 
   if (!user) {
     throw new ApiError(404, "User not found");
@@ -544,5 +462,5 @@ export {
   verifyResetOtp,
   resetPassword,
   updateUserLocation,
-  getUserLocation
+  getUserLocation,
 };

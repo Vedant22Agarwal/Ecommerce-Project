@@ -27,18 +27,6 @@ const userSchema = new mongoose.Schema(
       unique: true,
       sparse: true,
     },
-    resetPasswordOtp: {
-      type: String,
-    },
-
-    resetPasswordOtpExpires: {
-      type: Date,
-    },
-
-    resetPasswordVerified: {
-      type: Boolean,
-      default: false,
-    },
     cartData: {
       type: Object,
       default: {},
